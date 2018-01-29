@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>COUNTER</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+    <script src="./js/bignumber.min.js"></script>
+    <script src="./js/crypto-js.js"></script>
+    <script src="./js/utf8.js"></script>
+    <script src="./js/web3.min.js"></script>
+    <script>
+        var url = "http://192.168.99.100:8545";
+        var user_name;
+        var web3 = new Web3;
+        var provider = new web3.providers.HttpProvider(url);
+        web3.setProvider(provider);
+        web3.eth.defaultAccount = web3.eth.accounts[0];
+        var ABI = [{
+                "constant": false,
+                "inputs": [],
+                "name": "countUp",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "getCounterName",
+                "outputs": [{
+                    "name": "name",
+                    "type": "bytes32"
+                }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "getNumberOfCounter",
+                "outputs": [{
+                    "name": "number",
+                    "type": "uint32"
+                }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{
+                    "name": "name",
+                    "type": "bytes32"
+                }],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            }
+        ];
+        var masterABI = [{
+                "constant": true,
+                "inputs": [],
+                "name": "getCounterAddressList",
+                "outputs": [{
+                    "name": "counterAddressList",
+                    "type": "address[]"
+                }],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [{
+                    "name": "name",
+                    "type": "bytes32"
+                }],
+                "name": "addCounter",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+        var master = web3.eth.contract(masterABI).at("0xaddacb26693cf04d134ed9ccb2f954f12ace6e2d");
+        var CounterAddressList = master.getCounterAddressList();
+        console.log(master);
+        console.log(CounterAddressList);
+
+        //ログイン
+        function login() {
+            user_name = $("#userName").val();
+            var password = $("#password").val();
+            var JSONdata = createJSONdata("personal_unlockAccount", [user_name, password, 100]);
+            console.log(JSONdata);
+
+            executeJsonRpc(url, JSONdata, function success(data) {
+                //ログイン成功
+                if (data.error == null) {
+                    console.log("login success");
+                } else {
+                    //ログイン失敗
+                    console.log("login error");
+                }
+                init();
+            }, function error(data) {
+                //ログインエラー
+                console.log("login error");
+            });
+        }
+
+        //初期処理
+        function init() {
+            web3.eth.defaultAccount = user_name;
+            var table = document.getElementById('list');
+            for (var i = 0; i < CounterAddressList.length; i++) {
+                //対象のコントラクトの取得
+                var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
+                // html編集,table追加,編集 ここから
+                var row = table.insertRow();
+                var td = row.insertCell(0);
+                var radioButton1 = document.createElement('input');
+                radioButton1.type = 'radio';
+                radioButton1.name = 'CounterAddress';
+                radioButton1.value = CounterAddressList[i];
+                td.appendChild(radioButton1);
+                td = row.insertCell(1);
+                td.innerHTML = web3.toAscii(Counter.getCounterName());
+                td = row.insertCell(2);
+                td.innerHTML = Counter.getNumberOfCounter();
+                // html編集, table追加, 編集 ここまで
+            }
+        }
+
+        //更新
+        function refresh() {
+            web3.eth.defaultAccount = user_name;
+            //html編集table行の削除ここから
+            var table = document.getElementById('list');
+            for (var i = CounterAddressList.length; i > 0; i--) {
+                table.deleteRow(i);
+            }
+            //html編集table行の削除ここまで
+            init();
+        }
+
+        //カウントアップ
+        function countUp() {
+            web3.eth.defaultAccount = user_name;
+            var targetAddress;
+            var CounterList = document.getElementsByName("CounterAddress");
+            for (i = 0; i < CounterList.length; i++) {
+                if (CounterList[i].checked) {
+                    //対象の候補者コントラクトアドレスを取得
+                    targetAddress = CounterList[i].value;
+                }
+            }
+            //対象候補者コントラクトを取得
+            var Counter = web3.eth.contract(ABI).at(targetAddress);
+            //対象候補者に投票
+            Counter.countUp();
+        }
+
+        //JSONメッセージ生成
+        function createJSONdata(method, params) {
+            var JSONdata = {
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params
+            };
+            return JSONdata;
+        }
+
+        //JSON-RPC実行
+        function executeJsonRpc(url_exec, JSONdata, success, error) {
+            $.ajax({
+                type: 'post',
+                url: url_exec,
+                data: JSON.stringify(JSONdata),
+                contentType: 'application/JSON',
+                dataType: 'JSON',
+                scriptCharset: 'utf-8',
+                success: function (data) {
+                    success(data);
+                },
+                error: function (data) {
+                    error(data);
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <p>
+        ユーザ名:&nbsp;
+        <input type="text" id="userName" value="0x0ee7cc1d54b391c8ed2c3c5c7c69f5f6ab0854b2">&nbsp; パスワード:&nbsp;
+        <input type="text" id="password" value="">&nbsp;
+        <input type="button" value="login" onclick="login();" />
+    </p>
+
+    <table id="list" border="1">
+        <tr>
+            <th></th>
+            <th>name</th>
+            <th>number of counter</th>
+        </tr>
+    </table>
+    <br>
+    <input type="button" value="countUp" onclick="countUp();">
+    <br>
+    <input type="button" value="refresh" onclick="refresh();">
+</body>
+
+</html>
