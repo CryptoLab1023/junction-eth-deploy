@@ -6,15 +6,22 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "body-parser": "~1.18.2",
-    "cookie-parser": "~1.4.3",
-    "debug": "~2.6.9",
-    "ejs": "~2.5.7",
-    "express": "~4.15.5",
-    "morgan": "~1.9.0",
+    "bignumber": "^1.1.0",
+    "body-parser": "^1.18.2",
+    "cookie-parser": "^1.4.3",
+    "crypto-js": "^3.1.9-1",
+    "debug": "^2.6.9",
+    "ejs": "^2.5.7",
+    "ethereumjs-testrpc": "^6.0.3",
+    "express": "^4.16.2",
+    "jquery": "^3.3.1",
+    "morgan": "^1.9.0",
     "node-gyp": "^3.6.2",
     "rebuild": "^0.1.2",
-    "serve-favicon": "~2.4.5",
-    "web3": "^0.20.0"
+    "serve-favicon": "^2.4.5",
+    "superagent": "^3.8.2",
+    "utf8": "^3.0.0",
+    "web3": "^0.20.4",
+    "web3_extended": "^1.0.0"
   }
 }

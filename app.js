@@ -43,4 +43,10 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
+app.post('/', function(err, req, res){
+  res.send(req.body);
+});
+
+app.get('/', function (req, res) { res.render('index') });
+
 module.exports = app;
