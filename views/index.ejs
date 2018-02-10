@@ -5,29 +5,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>COUNTER</title>
+    <title><%=title%></title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-
 </head>
 
 <body>
 
     <p>
         ユーザ名:&nbsp;
-        <input type="text" id="userName" value="0x0ee7cc1d54b391c8ed2c3c5c7c69f5f6ab0854b2">&nbsp; パスワード:&nbsp;
-        <input type="text" id="password" value="">&nbsp;
+        <input type="text" id="userName" value="0x804c868b4dd7d979a5e7ee809c21612a1a6ae921">&nbsp; パスワード:&nbsp;
+        <input type="text" id="password" value="pass01">&nbsp;
         <input type="button" value="login" onclick="login();" />
     </p>
 
     <table id="list" border="1">
+    <thead>
         <tr>
             <th></th>
             <th>name</th>
             <th>number of counter</th>
         </tr>
-        <tr>
-            <td></td>
-        </tr>
+    </thead>
+    <tbody id="list-body">
+    </tbody>
+
     </table>
     <br>
     <input type="button" value="countUp" onclick="countUp();">
@@ -35,29 +36,71 @@
     <input type="button" value="refresh" onclick="refresh();">
 
     <script>
-        var url = "/";
         var user_name;
+
+        //カウントアップ
+        function countUp() {
+            user_name = $("#userName").val();
+            var targetAddress;
+            var CounterList = document.getElementsByName("CounterAddress");
+            for (i = 0; i < CounterList.length; i++) {
+                if (CounterList[i].checked) {
+                    //対象の候補者コントラクトアドレスを取得
+                    targetAddress = CounterList[i].value;
+                }
+            }
+            var JSONdata = createJSONdata("CounterList_Address", [user_name, targetAddress]);
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('post', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
+        }
+
+        //更新
+        function refresh() {
+            var JSONdata = createJSONdata("personal_unlockAccount", [user_name]);
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('refresh', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
+        }
 
         //ログイン
         function login() {
             user_name = $("#userName").val();
             var password = $("#password").val();
             var JSONdata = createJSONdata("personal_unlockAccount", [user_name, password, 100]);
-            console.log(JSONdata);
-
-            executeJsonRpc(url, JSONdata, function success(data) {
-                //ログイン成功
-                if (data.error == null) {
-                    console.log("login success");
-                } else {
-                    //ログイン失敗
-                    console.log("login error");
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('login', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
                 }
-                init();
-            }, function error(data) {
-                //ログインエラー
-                console.log("login error");
-            });
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
         }
 
         //JSONメッセージ生成
@@ -71,22 +114,17 @@
         }
 
         //JSON-RPC実行
-        function executeJsonRpc(url_exec, JSONdata, success, error) {
-            $.ajax({
+        function executeJsonRpc(url_exec, JSONdata) {
+            return $.ajax({
                 type: 'post',
                 url: url_exec,
                 data: JSON.stringify(JSONdata),
                 contentType: 'application/JSON',
                 dataType: 'JSON',
-                scriptCharset: 'utf-8',
-                success: function (data) {
-                    success(data);
-                },
-                error: function (data) {
-                    error(data);
-                }
+                scriptCharset: 'utf-8'
             });
         }
+
     </script>
 </body>
 

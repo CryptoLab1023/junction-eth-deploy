@@ -7,84 +7,56 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Monitoring Tool</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
-    <script src="./js/bignumber.min.js"></script>
-    <script src="./js/crypto-js.js"></script>
-    <script src="./js/utf8.js"></script>
-    <script src="./js/web3.min.js"></script>
     <script>
-        var web3 = new Web3();
-        var provider = new web3.providers.HttpProvider("http://192.168.99.100:8545");
-        web3.setProvider(provider);
-        web3.eth.defaultAccount = web3.eth.accounts[0];
-        var stop = false;
+    var stop = false;
 
-        //監視開始
-        function startMonitor() {
-            stop = false;
-            //20件前のブロックから参照
-            var startBlockNo = web3.eth.blockNumber - 20;
-            var table = document.getElementById('list');
-            var i = startBlockNo;
-            for (; i <= web3.eth.blockNumber; i++) {
-                var result = web3.eth.getBlock(i);
-                insertBlockRow(result, table, i)
+    //監視開始
+    function startMonitor() {
+        stop = false;
+        //20件前のブロックから参照
+        var JSONdata = createJSONdata("time_obtain", []);
+        console.log(JSON.stringify(JSONdata));
+        executeJsonRpc('monitor/post', JSONdata)
+        .done(
+            function(data){
+                console.log(data);
+                $("#list-body").html(data.responseText);
             }
-            setTimeout(function () {
-                watchBlock(table, i);
-            }, 10000);
-        }
+        ).fail(
+            function(data){
+                console.log(data);
+                $("#list-body").html(data.responseText);
 
-        //ブロック監視
-        function watchBlock(table, blockNumber) {
-            if (stop) {
-                return;
             }
-            if (blockNumber == web3.eth.blockNumber) {
-                setTimeout(function () {
-                    watchBlock(table, blockNumber);
-                }, 10000);
-                return;
-            }
-            var result = web3.eth.getBlock(blockNumber);
-            console.log(result)
-            insertBlockRow(result, table, blockNumber);
-            setTimeout(function () {
-                watchBlock(table, ++blockNumber);
-            }, 10000)
-        }
+        )
+    }
+    //JSONメッセージ生成
+    function createJSONdata(method, params) {
+        var JSONdata = {
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params
+        };
+        return JSONdata;
+    }
 
+    //JSON-RPC実行
+    function executeJsonRpc(url_exec, JSONdata) {
+        return $.ajax({
+            type: 'post',
+            url: url_exec,
+            data: JSON.stringify(JSONdata),
+            contentType: 'application/JSON',
+            dataType: 'JSON',
+            scriptCharset: 'utf-8'
+        });
+    }
 
-        //行追加
-        function insertBlockRow(result, table) {
-            var row = table.insertRow();
-            var td = row.insertCell(0);
-            td.innerHTML = result.number;
-            var td = row.insertCell(1);
-            td.innerHTML = new Date(result.timestamp * 1000).toString();
-            var td = row.insertCell(2);
-            td.innerHTML = result.hash;
-            var td = row.insertCell(3);
-            td.innerHTML = result.nonce;
-            var td = row.insertCell(4);
-            if (result.transactions.length > 0) {
-                insertTranRow(result.transactions, td);
-            }
-        }
+    //停止
+    function stopWatch() {
+        stop = true;
+    }
 
-        //行追加 トランザクション情報編集
-        function insertTranRow(transactions, td) {
-            var allData = "";
-            for (var i = 0; i < transactions.length; i++) {
-                var data = web3.eth.getTransaction(transactions[i]);
-                allData += JSON.stringify(data);
-            }
-            td.innerHTML = "<input type='text' value'" + allData + "' /></td>"
-        }
-
-        //停止
-        function stopWatch() {
-            stop = true;
-        }
     </script>
 </head>
 
@@ -93,14 +65,20 @@
     <input type="button" value="start" onclick="startMonitor();" />
     <input type="button" value="stop" onclick="stopWatch();">
     <table id="list" border="1">
-        <tr>
-            <th>Block
-                <br>Number</th>
-            <th>TimeStamp</th>
-            <th>BlockHash</th>
-            <th>Nonce</th>
-            <th>Transaction</th>
-        </tr>
+    <thead>
+    <tr>
+        <th>Block
+            <br>Number</th>
+        <th>TimeStamp</th>
+        <th>BlockHash</th>
+        <th>Nonce</th>
+        <th>Transaction</th>
+    </tr>
+    </thead>
+    <tbody id="list-body">
+
+    </tbody>
+
     </table>
 </body>
 

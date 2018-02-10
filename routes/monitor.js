@@ -18,6 +18,8 @@ var coinbase = web3.eth.coinbase;
 var balance = web3.eth.getBalance(coinbase);
 // console.log("balance:", balance);
 
+
+
 //CounterコントラクトのABI
 var ABI = [
     {
@@ -105,89 +107,63 @@ var masterABI = [
 // Counterのアドレスを指定
 var master = web3.eth.contract(masterABI).at("0x92715816b5666686e7fdc4d531b5147a3fedae41");
 var CounterAddressList = master.getCounterAddressList();
-
-console.log(master);
-console.log(CounterAddressList.length);
-
-
-
+// console.log(master);
+// console.log(CounterAddressList.length);
 
 // ユーザーの名前
 var user_name;
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-    res.render('index',
-        {
-            title: 'Express',
-            content: ""
-        });
-});
-
-router.post('/login', function (req, res) {
-
-    // console.log(req.body);
-    web3.eth.defaultAccount = req.body.params[0];
-    // console.log(web3.personal);
-    table = "";
-    console.log(CounterAddressList.length);
-    for (var i = 0; i < CounterAddressList.length; i++) {
-        // 対象のコントラクトの取得
-        var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
-        // html編集,table追加,編集 ここから
-        var name = web3.toAscii(Counter.getCounterName());
-        var number = Counter.getNumberOfCounter();
-        var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
-        '<td>' + name + '</td>' +
-        '<td>' + number + '</td></tr>'
-        // html編集, table追加, 編集 ここまで
-        console.log(table);
-    }
-
-    // res.send(table);
-
-
-    web3.personal.unlockAccount(req.body.params[0], req.body.params[1], req.body.params[2],
-        function (error, result) {
-            console.log(result);
-            // res.render('index', {
-            //     'content': table
-            // })
-            res.send(table);
-        }
-    );
+    res.render('monitor');
 });
 
 router.post('/post', function (req, res) {
-    web3.eth.defaultAccount = req.body.params[0];
-    console.log(web3.eth.defaultAccount);
-    //対象候補者コントラクトを取得
-    var Counter = web3.eth.contract(ABI).at(req.body.params[1]);
-    //対象候補者に投票
-    Counter.countUp();
-});
 
-router.post('/refresh', function (req, res) {
+    web3.eth.defaultAccount = web3.eth.accounts[0];
 
-    // console.log(req.body);
-    web3.eth.defaultAccount = req.body.params[0];
-    // console.log(web3.personal);
-    table = "";
-    console.log(CounterAddressList.length);
-    for (var i = 0; i < CounterAddressList.length; i++) {
-        // 対象のコントラクトの取得
-        var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
-        // html編集,table追加,編集 ここから
-        var name = web3.toAscii(Counter.getCounterName());
-        var number = Counter.getNumberOfCounter();
-        var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
-        '<td>' + name + '</td>' +
-        '<td>' + number + '</td></tr>'
-        // html編集, table追加, 編集 ここまで
-        console.log(table);
+    // var startBlockNo = web3.eth.blockNumber - 20;
+    // var i = startBlockNo;
+    // var insert = function() {
+    //     for (; i <= web3.eth.blockNumber; i++) {
+    //         var result = web3.eth.getBlock(i);
+    //         insertBlockRow(result, i)
+    //             .then(insertTranRow(result.transactions, row), function(){console.log("insert失敗")})
+    //     }
+    // }
+    // insert().then(
+    //     function () {
+    //         res.send(row);
+    //     },
+    //     function () {
+    //         console.log("row失敗")
+    //     }
+    // )
+
+
+    //行追加
+    var row = "";
+    for (var i = 0; i < web3.eth.blockNumber; i++) {
+        var result = web3.eth.getBlock(i);
+        row = row + "<tr><td>" + result.number + "</td>" +
+        "<td>" + new Date(result.timestamp * 1000).toString() + "</td>" +
+        "<td>" + result.hash + "</td>" +
+            "<td>" + result.nonce + "</td></tr>";
+        allData = "";
+        for (var j = 0; j < result.transactions.length; j++){
+            var data = web3.eth.getTransaction(result.transactions[j]);
+            allData += JSON.stringify(data);
+        }
+        row = row + "<input type='text' value='" + allData + "' /></td>";
     }
-    res.send(table);
+    res.send(row);
 
+    //行追加 トランザクション情報編集
+    // function insertTranRow(transactions, row) {
+    //     var allData = "";
+    //
+    // }
 });
+
 
 module.exports = router;
