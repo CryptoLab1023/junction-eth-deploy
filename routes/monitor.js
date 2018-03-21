@@ -140,7 +140,6 @@ router.post('/post', function (req, res) {
     //     }
     // )
 
-
     //行追加
     var row = "";
     for (var i = 0; i < web3.eth.blockNumber; i++) {

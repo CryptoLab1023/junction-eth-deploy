@@ -110,8 +110,6 @@ console.log(master);
 console.log(CounterAddressList.length);
 
 
-
-
 // ユーザーの名前
 var user_name;
 
@@ -121,7 +119,8 @@ router.get('/', function(req, res, next) {
         {
             title: 'Express',
             content: ""
-        });
+        }
+    );
 });
 
 router.post('/login', function (req, res) {
@@ -146,7 +145,6 @@ router.post('/login', function (req, res) {
 
     // res.send(table);
 
-
     web3.personal.unlockAccount(req.body.params[0], req.body.params[1], req.body.params[2],
         function (error, result) {
             console.log(result);
@@ -164,7 +162,11 @@ router.post('/post', function (req, res) {
     //対象候補者コントラクトを取得
     var Counter = web3.eth.contract(ABI).at(req.body.params[1]);
     //対象候補者に投票
-    Counter.countUp();
+    Counter.countUp((error, result) => {
+        if (!error) {
+            console.log(result);
+        }
+    });
 });
 
 router.post('/refresh', function (req, res) {
@@ -187,7 +189,6 @@ router.post('/refresh', function (req, res) {
         console.log(table);
     }
     res.send(table);
-
 });
 
 module.exports = router;
