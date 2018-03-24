@@ -1,114 +1,48 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-var bignumber = require('bignumber');
-var CryptoJs = require('crypto-js');
-var Utf8 = require('utf8');
-var Web3 = require('web3');
-var async = require('async');
-var $ = require('jquery');
+var bignumber = require("bignumber");
+var CryptoJs = require("crypto-js");
+var Utf8 = require("utf8");
+var Web3 = require("web3");
+var solc = require("solc");
+var fs = require("fs");
+var $ = require("jquery");
+var SHA3 = require("sha3");
+var util = require("util");
+var web3 = new Web3();
 
-var url = "http://192.168.99.100:8545";
-var user_name;
-var web3 = new Web3;
-var provider = new web3.providers.HttpProvider(url);
-web3.setProvider(provider);
+if (!web3.currentProvider) {
+  web3.setProvider(
+    new Web3.providers.HttpProvider("http://192.168.99.100:8545")
+  );
+} else {
+  console.log("error");
+  exit;
+}
 
-//web3で接続しているか確認
-var coinbase = web3.eth.coinbase;
-var balance = web3.eth.getBalance(coinbase);
-// console.log("balance:", balance);
-
-//CounterコントラクトのABI
-var ABI = [
+const input = fs.readFileSync("./solidity/Junction.sol", "utf8");
+const output = solc.compile(input, 1);
+const bytecode = output.contracts[":JunctionContract"].bytecode;
+const abi = JSON.parse(output.contracts[":JunctionContract"].interface);
+console.log(abi);
+// const ABI = JSON.parse(output.contracts[":Counter"].interface);
+var master = web3.eth.contract(abi);
+var contractNew = master.new(
     {
-        "constant": false,
-        "inputs": [],
-        "name": "countUp",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "getCounterName",
-        "outputs": [
-            {
-                "name": "name",
-                "type": "bytes32"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "getNumberOfCounter",
-        "outputs": [
-            {
-                "name": "number",
-                "type": "uint32"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "name": "name",
-                "type": "bytes32"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "constructor"
+        from: web3.eth.coinbase,
+        data: '0x' + bytecode,
+        gas: '4700000'
+    }, (error, result) => {
+        console.log(error, result);
+        if (typeof result.address !== 'undefined') {
+            console.log('Contract mined! address: ' + result.address + ' transactionHash: ' + result.transactionHash);
+        }
     }
-];
+);
+// var CounterAddressList = master.getCounterAddressList();
 
-//CounterMasterコントラクトのABI
-var masterABI = [
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "getCounterAddressList",
-        "outputs": [
-            {
-                "name": "counterAddressList",
-                "type": "address[]"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "name",
-                "type": "bytes32"
-            }
-        ],
-        "name": "addCounter",
-        "outputs": [],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
-
-// Counterのアドレスを指定
-var master = web3.eth.contract(masterABI).at("0x92715816b5666686e7fdc4d531b5147a3fedae41");
-var CounterAddressList = master.getCounterAddressList();
-
-console.log(master);
-console.log(CounterAddressList.length);
-
+// console.log(master);
+// console.log(CounterAddressList.length);
 
 // ユーザーの名前
 var user_name;
@@ -125,70 +59,88 @@ router.get('/', function(req, res, next) {
 
 router.post('/login', function (req, res) {
 
-    // console.log(req.body);
-    web3.eth.defaultAccount = req.body.params[0];
-    // console.log(web3.personal);
-    table = "";
-    console.log(CounterAddressList.length);
-    for (var i = 0; i < CounterAddressList.length; i++) {
-        // 対象のコントラクトの取得
-        var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
-        // html編集,table追加,編集 ここから
-        var name = web3.toAscii(Counter.getCounterName());
-        var number = Counter.getNumberOfCounter();
-        var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
-        '<td>' + name + '</td>' +
-        '<td>' + number + '</td></tr>'
-        // html編集, table追加, 編集 ここまで
-        console.log(table);
-    }
+    // // console.log(req.body);
+    // web3.eth.defaultAccount = req.body.params[0];
+    // // console.log(web3.personal);
+    // table = "";
+    // console.log(CounterAddressList.length);
+    // for (var i = 0; i < CounterAddressList.length; i++) {
+    //     // 対象のコントラクトの取得
+    //     var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
+    //     // html編集,table追加,編集 ここから
+    //     var name = web3.toAscii(Counter.getCounterName());
+    //     var number = Counter.getNumberOfCounter();
+    //     var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
+    //     '<td>' + name + '</td>' +
+    //     '<td>' + number + '</td></tr>'
+    //     // html編集, table追加, 編集 ここまで
+    //     console.log(table);
+    // }
 
     // res.send(table);
-
     web3.personal.unlockAccount(req.body.params[0], req.body.params[1], req.body.params[2],
         function (error, result) {
             console.log(result);
             // res.render('index', {
             //     'content': table
             // })
-            res.send(table);
+            // res.send(table);
         }
     );
 });
 
-router.post('/post', function (req, res) {
+// router.post('/post', function (req, res) {
+//     web3.eth.defaultAccount = req.body.params[0];
+//     //対象候補者コントラクトを取得
+//     var Counter = web3.eth.contract(ABI).at(req.body.params[1]);
+//     //対象候補者に投票
+//     Counter.countUp((error, result) => {
+//         if (!error) {
+//             console.log(result);
+//         }
+//     });
+// });
+
+
+
+// router.post('/refresh', function (req, res) {
+//     web3.eth.defaultAccount = req.body.params[0];
+//     console.log(CounterAddressList);
+//     table = "";
+//     console.log(CounterAddressList.length);
+//     for (var i = 0; i < CounterAddressList.length; i++) {
+//         // 対象のコントラクトの取得
+//         var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
+//         // html編集,table追加,編集 ここから
+//         var name = web3.toAscii(Counter.getCounterName());
+//         var number = Counter.getNumberOfCounter();
+//         var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
+//         '<td>' + name + '</td>' +
+//         '<td>' + number + '</td></tr>'
+//         // html編集, table追加, 編集 ここまで
+//         console.log(table);
+//     }
+//     res.send(table);
+// });
+
+
+router.post('/add', function (req, res) {
     web3.eth.defaultAccount = req.body.params[0];
-    console.log(web3.eth.defaultAccount);
-    //対象候補者コントラクトを取得
-    var Counter = web3.eth.contract(ABI).at(req.body.params[1]);
-    //対象候補者に投票
-    Counter.countUp((error, result) => {
+    var name = req.body.params[1];
+    master.setGreeting(name, (error, result) => {
         if (!error) {
-            console.log(result);
+            var say = master.say()
+            console.log(say);
+            res.send(say);
         }
     });
-});
+})
 
-router.post('/refresh', function (req, res) {
-
-    // console.log(req.body);
-    web3.eth.defaultAccount = req.body.params[0];
-    // console.log(web3.personal);
-    table = "";
-    console.log(CounterAddressList.length);
-    for (var i = 0; i < CounterAddressList.length; i++) {
-        // 対象のコントラクトの取得
-        var Counter = web3.eth.contract(ABI).at(CounterAddressList[i]);
-        // html編集,table追加,編集 ここから
-        var name = web3.toAscii(Counter.getCounterName());
-        var number = Counter.getNumberOfCounter();
-        var table = table + '<tr><td><input type="radio" name="CounterAddress" value="' + CounterAddressList[i] + '"></td>' +
-        '<td>' + name + '</td>' +
-        '<td>' + number + '</td></tr>'
-        // html編集, table追加, 編集 ここまで
-        console.log(table);
-    }
-    res.send(table);
-});
+router.post('/load', (req, res) => {
+    web3.eth.defaultAccout = req.body.params[0];
+    var accounts = web3.eth.accounts;
+    console.log(accounts);
+    res.send(accounts);
+})
 
 module.exports = router;
