@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title><%=title%></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+</head>
+
+<body>
+
+    <p>
+        ユーザ名:&nbsp;
+        <input type="text" id="userName" value="0xdd8a6595629ea0cfa1ba3aa838b685f588c0821a">&nbsp; パスワード:&nbsp;
+        <input type="text" id="password" value="">&nbsp;
+        <input type="button" value="login" onclick="login();" />
+    </p>
+    <p>
+        カウンター名:<input type="text" id="CounterName">
+    </p>
+
+    <table id="list" border="1">
+    <thead>
+        <tr>
+            <th></th>
+            <th>name</th>
+            <th>number of counter</th>
+        </tr>
+    </thead>
+    <tbody id="list-body">
+    </tbody>
+
+    </table>
+    <br>
+    <input type="button" value="countUp" onclick="countUp();">
+    <br>
+    <input type="button" value="refresh" onclick="refresh();">
+    <br>
+    <input type="button" value="add" onclick="add();">
+    <div id="accounts"></div>
+
+    <script>
+        var user_name;
+        var counterName;
+        window.on("load", () => {
+            getAccounts();
+        })
+
+        function getAccounts(){
+            user_name = $("#userNAame").val();
+            var JSONdata = createJSONdata("getAccounts", [user_name]);
+            executeJsonRpc('load', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#accounts").html(data);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                }
+            );
+        }
+
+        function add() {
+            counterName = $("#CounterName").val();
+            var JSONdata = createJSONdata("CounterAdd", [user_name, counterName]);
+            executeJsonRpc('add', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                }
+            );
+        }
+
+        //カウントアップ
+        function countUp() {
+            user_name = $("#userName").val();
+            var targetAddress;
+            var CounterList = document.getElementsByName("CounterAddress");
+            for (i = 0; i < CounterList.length; i++) {
+                if (CounterList[i].checked) {
+                    //対象の候補者コントラクトアドレスを取得
+                    targetAddress = CounterList[i].value;
+                }
+            }
+            var JSONdata = createJSONdata("CounterList_Address", [user_name, targetAddress]);
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('post', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
+        }
+
+        //更新
+        function refresh() {
+            var JSONdata = createJSONdata("personal_unlockAccount", [user_name]);
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('refresh', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
+        }
+
+        //ログイン
+        function login() {
+            user_name = $("#userName").val();
+            var password = $("#password").val();
+            var JSONdata = createJSONdata("personal_unlockAccount", [user_name, password, 100]);
+            console.log(JSON.stringify(JSONdata));
+            executeJsonRpc('login', JSONdata)
+            .done(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            ).fail(
+                function(data){
+                    console.log(data);
+                    $("#list-body").html(data.responseText);
+                }
+            );
+        }
+
+        //JSONメッセージ生成
+        function createJSONdata(method, params) {
+            var JSONdata = {
+                "jsonrpc": "2.0",
+                "method": method,
+                "params": params
+            };
+            return JSONdata;
+        }
+
+        //JSON-RPC実行
+        function executeJsonRpc(url_exec, JSONdata) {
+            return $.ajax({
+                type: 'post',
+                url: url_exec,
+                data: JSON.stringify(JSONdata),
+                contentType: 'application/JSON',
+                dataType: 'JSON',
+                scriptCharset: 'utf-8'
+            });
+        }
+
+
+    </script>
+</body>
+
+</html>

@@ -1,10 +1,9 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.20;
 
 contract JunctionContract {
     // アイテムの名前を売り手に紐付ける
     mapping (string => address) private itemNameToSeller;
-    // アイテムの名前を売っている商品の配列の番号に紐付ける
-    mapping (string => uint) private itemToNumber;
+    mapping (string => uint) private itemToPrice;
     // アイテムを売り手に紐付ける
     mapping (uint => address) private itemToSeller;
     // 履歴をアドレスに買い手紐付け
@@ -39,22 +38,19 @@ contract JunctionContract {
     // 売れたら起こるイベント
     event SellingSuccessful(address _currentSeller, string _name, uint _price);
 
-
-
     // 売り手側ファンクション
     // アイテムを登録する
     function setItem(string _name, uint _price) external {
         Item memory item = Item(_name, _price);
         items.push(item);
         itemNameToSeller[_name] = msg.sender;
-        itemToNumber[_name] = items.length - 1;
         sellerItemCount[msg.sender]++;
         uint id = items.length - 1;
         itemToSeller[id] = msg.sender;
     }
 
     // 売り手からアイテムを取得する
-    function getItemsFromSeller(address _seller) external constant returns(uint[]) {
+    function getItemsFromSeller(address _seller) external constant returns (uint[]) {
         uint[] memory result = new uint[](sellerItemCount[_seller]);
         uint counter = 0;
         for (uint i = 0; i < items.length; i++) {
@@ -80,8 +76,8 @@ contract JunctionContract {
     }
 
     // アイテムの売り手を取得する
-    function getSeller(string _name) public view returns (address) {
-        return itemNameToSeller[_name];
+    function getPrice(string _name) public view returns (uint) {
+        return itemToPrice[_name];
     }
 
     function getAllItems() public view returns (uint[]) {
@@ -124,7 +120,6 @@ contract JunctionContract {
 
     // バリデーションありの購入パブリックファンクション
     function buy(string _name, uint32 _amount) external payable {
-        require(msg.value > items[itemToNumber[_name]].price * _amount);
         _buy(_name, msg.value, _amount);
     }
 
